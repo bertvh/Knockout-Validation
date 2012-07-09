@@ -887,10 +887,7 @@
 
         var callBack = function (valObj) {
             var isValid = false,
-                msg = '';
-
-            // tell it that we're done
-            observable.isValidating(false);
+                    msg = '';
 
             if (!observable.__valid__()) {
                 return; //if its already NOT valid, don't add to that
@@ -905,12 +902,17 @@
             }
 
             if (isValid) {//its VALID, so don't mess up anything that may have happened synchronously earlier on
+                // tell it that we're done
+                observable.isValidating(false);
                 return;
             }
 
             //not valid, so format the error message and stick it in the 'error' variable
             observable.error = ko.validation.formatMessage(msg || ctx.message || rule.message, ctx.params);
             observable.__valid__(isValid);
+
+            // tell it that we're done
+            observable.isValidating(false);
         };
 
         //fire the validator and hand it the callback
