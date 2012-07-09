@@ -282,6 +282,37 @@ test('Object is NOT Valid and isValid returns False', function () {
     equal(testObj.isValid(), false, 'testObj is not valid');
 });
 
+test('Issue 74 - Object is Valid with a step of 0.1 and isValid returns True', function () {
+    var testObj = ko.observable('')
+                    .extend({ step: 0.1 });
+
+    testObj(6);
+
+    equal(testObj(), 6, 'observable still works');
+    ok(testObj.isValid(), 'testObj is Valid');
+});
+
+
+test('Issue 74 - Object is Valid with a step of 0.1 and incremented by 0.1 and isValid returns True', function () {
+    var testObj = ko.observable(6)
+                    .extend({ step: 0.1 });
+
+    testObj(6.1);
+
+    equal(testObj(), 6.1, 'observable still works');
+    ok(testObj.isValid(), 'testObj is Valid');
+});
+
+test('Issue 74 - Object is NOT Valid with a step of 0.1 and isValid returns False', function () {
+    var testObj = ko.observable('')
+                    .extend({ step: 0.1 });
+
+    testObj(5);
+    testObj(5.15);
+
+    equal(testObj(), 5.15, 'observable still works');
+    equal(testObj.isValid(), false, 'testObj is not valid');
+});
 //#endregion
 
 //#region Email Validation
@@ -667,6 +698,28 @@ test("Issue #43 - Grouping - Error messages are not switched correctly", functio
     ok(!vm.testObj.isValid(), vm.testObj.error);
     ok(vm.testObj.error.indexOf('enter a value less than') > -1, "Max rule was correctly triggered");
 });
+
+test('Issue #78 - Falsy Params', function () {
+    var testObj = ko.observable('')
+                    .extend({
+                        min: {
+                            message: 'something',
+                            params: 0
+                        }
+                    });
+
+    testObj(1);
+
+    equal(testObj(), 1, 'observable still works');
+    equal(testObj.isValid(), true, 'testObj is valid');
+
+    testObj(0);
+    equal(testObj.isValid(), true, 'testObj is valid');
+
+    testObj(-1);
+    equal(testObj.isValid(), false, 'testObj is not valid');
+
+});
 //#endregion
 
 //#region Equal tests
@@ -888,6 +941,45 @@ test('Issue #37 - Toggle ShowAllMessages', function () {
 });
 //#endregion
 
+//#region Conditional Validation
+module('Conditional Validation in a rule');
+test('isValid always returns True when onlyIf Condition evaluates to false', function () {
+    var testObj = ko.observable('something').extend({
+        required: {
+            onlyIf: function() { return false; }
+        }
+    });
+    testObj('');
+    equal(testObj(), '', 'observable still works');
+    ok(testObj.isValid(), 'testObj is Valid');
+});
+
+test('isValid returns False When onlyIf Condition evaluates to true and Value is invalid', function () {
+    var testObj = ko.observable('something').extend({
+        required: {
+            onlyIf: function() { return true; }
+        }
+    });
+    testObj('');
+    equal(testObj(), '', 'observable still works');
+    equal(testObj.isValid(), false, 'testObj is not Valid');
+});
+
+test('Changing the value of observable used in onlyIf condition triggers validation', function () {
+    var person = {
+        isMarried: ko.observable(false).extend({ required: true }),
+    };
+    person.spouseName = ko.observable('').extend({ 
+                          required: { onlyIf: person.isMarried } 
+                        });
+    person.isMarried(false);
+    ok(person.spouseName.isValid(), 'Unmarried person is valid without spouse name')
+
+    person.isMarried(true);   
+    equal(person.spouseName.isValid(), false, 'Married person is not valid without spouse name')    
+});
+//#endregion
+
 //#region validatedObservable
 module('validatedObservable Tests');
 test('validatedObservable is Valid', function () {
@@ -938,6 +1030,46 @@ test('validatedObservable is first Valid then made InValid', function () {
     ok(!obj.isValid(), obj.errors()[0]);
 
 });
+
+test('validatedObservable does not show error message when not modified', function () {
+    var obj = ko.validatedObservable({
+        testObj: ko.observable('a').extend({ minLength: 5 }),
+        testObj2: ko.observable('').extend({ required: true })
+    });
+
+    ok(obj(), 'observable works');
+    ok(!obj().isAnyMessageShown(), 'validation error message is hidden');
+
+});
+
+
+test('validatedObservable does not show error message when modified but correct', function () {
+    var obj = ko.validatedObservable({
+        testObj: ko.observable('a').extend({ minLength: 5 }),
+        testObj2: ko.observable('').extend({ required: true })
+    });
+
+    obj().testObj('12345');
+    obj().testObj2('a');
+
+    ok(obj(), 'observable works');
+    ok(!obj().isAnyMessageShown(), 'validation error message is hidden');
+
+});
+
+test('validatedObservable show error message when at least one invalid and modified', function () {
+    var obj = ko.validatedObservable({
+        testObj: ko.observable('a').extend({ minLength: 5 }),
+        testObj2: ko.observable('').extend({ required: true })
+    });
+
+    obj().testObj.isModified(true);
+
+    ok(obj(), 'observable works');
+    ok(obj().isAnyMessageShown(), 'validation error message is shown');
+
+});
+
 //#endregion
 
 //#region Removing Validation
