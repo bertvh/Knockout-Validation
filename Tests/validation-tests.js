@@ -44,6 +44,20 @@ test('Empty spaces is not a valid value for required', function () {
     equal(testObj.isValid(), false, 'testObj is valid');
 });
 
+test('Issue #90 - "required: false" doesnt force validation', function () {
+
+    var testObj = ko.observable()
+                    .extend({ required: false });
+
+    equal(testObj.isValid(), true, 'testObj is valid without value');
+    
+    testObj('blah');
+    equal(testObj.isValid(), true, 'testObj is valid with value');
+
+    testObj(null);
+    equal(testObj.isValid(), true, 'testObj is valid without value after set/unset');
+});
+
 //#endregion
 
 //#region Min Validation
@@ -343,7 +357,7 @@ test('Object is Valid and isValid returns True', function () {
     testObj('test@example.com');
 
     equal(testObj(), 'test@example.com', 'observable still works');
-    ok(testObj.isValid(), 'testObj is Valid');
+    ok( testObj.isValid(), 'testObj is Valid' );
 });
 
 test('Object is NOT Valid and isValid returns False', function () {
@@ -352,9 +366,18 @@ test('Object is NOT Valid and isValid returns False', function () {
     testObj('text#example.com');
 
     equal(testObj(), 'text#example.com', 'observable still works');
-    equal(testObj.isValid(), false, testObj.error);
+    equal( testObj.isValid(), false, testObj.error );
+    equal( testObj.error, 'Please enter a proper email address', "Error Message Needs to be formatted correctly" );
 });
 
+test('Email with invalid domain', function(){
+    var testObj = ko.observable().extend({ email: true });
+
+    testObj("john@abc.com123");
+
+    equal( testObj.isValid(), false, testObj.error );
+    equal( testObj.error, 'Please enter a proper email address');
+})
 //#endregion
 
 //#region Date Validation
@@ -611,6 +634,32 @@ test('Object is Valid and isValid returns True', function () {
     equal(testObj(), 4, 'observable still works');
     equal(testObj.isValid(), false, 'testObj is valid');
     equal(testObj.error, 'Must Equal 5', 'Error Message Matches');
+});
+
+
+test( 'Issue #81 - Dynamic messages', function () {
+
+    var CustomRule = function () {
+        var self = this;
+        
+        this.message = 'before';
+        this.params = 0;
+
+        this.validator = function ( val, params ) {
+            self.message = 'after';
+
+            return false;
+        };
+    };
+
+    var testObj = ko.observable( 3 ).extend( {
+        validation: new CustomRule()
+    });
+
+    testObj( 4 );
+
+    equal( testObj.isValid(), false, 'testObj is not valid' );
+    equal( testObj.error, 'after', 'testObj changes messages dynamically' );
 });
 
 //#endregion
@@ -980,14 +1029,14 @@ test('Changing the value of observable used in onlyIf condition triggers validat
     var person = {
         isMarried: ko.observable(false).extend({ required: true }),
     };
-    person.spouseName = ko.observable('').extend({ 
-                          required: { onlyIf: person.isMarried } 
+    person.spouseName = ko.observable('').extend({
+                          required: { onlyIf: person.isMarried }
                         });
     person.isMarried(false);
     ok(person.spouseName.isValid(), 'Unmarried person is valid without spouse name')
 
-    person.isMarried(true);   
-    equal(person.spouseName.isValid(), false, 'Married person is not valid without spouse name')    
+    person.isMarried(true);
+    equal(person.spouseName.isValid(), false, 'Married person is not valid without spouse name')
 });
 //#endregion
 
