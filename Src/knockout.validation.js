@@ -386,13 +386,29 @@
             parseInputValidationAttributes: function (element, valueAccessor) {
                 ko.utils.arrayForEach(html5Attributes, function (attr) {
                     if (utils.hasAttribute(element, attr)) {
+                        var p = element.getAttribute(attr);
+                        var inputType = element.attributes.item("type").nodeValue;
+
+                        switch (inputType) {
+                            case 'number' :
+                            case 'range'  :
+                                p = parseFloat(p);
+                                break;
+                            case 'date'           :
+                            case 'datetime'       :
+                            case 'datetime-local' :
+                                p = new Date(p);
+                                break;
+                            default:
+                                p = p || true;
+                        }
+
                         ko.validation.addRule(valueAccessor(), {
                             rule: attr,
-                            params: element.getAttribute(attr) || true
+                            params: p === undefined ? true : p
                         });
                     }
-                });
-            },
+                })},
 
             // writes html5 validation attributes on the element passed in
             writeInputValidationAttributes: function (element, valueAccessor) {

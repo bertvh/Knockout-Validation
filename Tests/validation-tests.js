@@ -86,6 +86,17 @@ test('Object is NOT Valid and isValid returns False', function () {
     equal(testObj(), 1, 'observable still works');
     equal(testObj.isValid(), false, 'testObj is not valid');
 });
+
+test('Object is Valid and isValid returns True when value is given as a string', function () {
+    var testObj = ko.observable('')
+            .extend({ min: 2 });
+
+    testObj(1);
+
+    equal(testObj(), 1, 'observable still works');
+    equal(testObj.isValid(), false, 'testObj is not valid');
+});
+
 //#endregion
 
 //#region Max Validation
